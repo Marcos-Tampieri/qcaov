@@ -88,6 +88,8 @@
       <input type="radio">
       <input type="radio">
     </div>
+    <br>
+    <p1 id="result">A->0; B->0; C->0; F->0;</p1>
   </body>
   <script>
     function majorityGate() {
@@ -108,10 +110,12 @@
       }
 
       let A = document.getElementsByName("pair0")[0].checked ? 1 : 0;
-      let B = document.getElementsByName("pair2")[0].checked ? 1 : 0;
-      let C = document.getElementsByName("pair9")[0].checked ? 1 : 0;
-      
-      let F = (A & B) | (A & C) | (B & C); // Implementação da função booleana
+      let B = document.getElementsByName("pair2")[1].checked ? 1 : 0;
+      let C = document.getElementsByName("pair9")[0].checked ? 0 : 1;
+
+      let F = (A & B) | (A & C) | (B & C); /* Majority gate with cells A, B and C */
+
+      document.getElementById("result").innerText = "A->" + A + "; B->" + B + "; C->" + C + "; F->" + F + ";";
       
       document.getElementsByName("pair4")[0].checked = F ? true : false;
       document.getElementsByName("pair4")[1].checked = !F ? true : false;
@@ -127,4 +131,3 @@
     }
   </script>
 </html>
-
