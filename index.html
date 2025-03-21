@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QCA Online Visualizer</title>
+    <style>
+      body {
+        background-color: darkgrey;
+      }
+      div {
+        border: 1px solid black;
+        width: 50px;
+        display: inline-block;
+      }
+      input {
+        accent-color: black;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Majority gate</h1>
+    <img src="majorityGate.jpg" alt="majorityGate.jpg">
+    <img src="states.jpg" alt="states.jpg">
+    <br>
+    <div id="cell0" style="visibility: hidden;">
+      <input type="radio">
+      <input type="radio">
+      <br/>
+      <input type="radio">
+      <input type="radio">
+    </div>
+    <div id="cell1">
+      <input type="radio" name="pair0" onclick="majorityGate();">
+      <input type="radio" name="pair0" onclick="majorityGate();">
+      <br/>
+      <input type="radio" name="pair1" onclick="majorityGate();" style="pointer-events: none;">
+      <input type="radio" name="pair1" onclick="majorityGate();" style="pointer-events: none;">
+    </div>
+    <div id="cell2" style="visibility: hidden;">
+      <input type="radio">
+      <input type="radio">
+      <br/>
+      <input type="radio">
+      <input type="radio">
+    </div>
+    <br/>
+    <div id="cell3">
+      <input type="radio" name="pair2" onclick="majorityGate();">
+      <input type="radio" name="pair3" onclick="majorityGate();" style="pointer-events: none;">
+      <br/>
+      <input type="radio" name="pair2" onclick="majorityGate();">
+      <input type="radio" name="pair3" onclick="majorityGate();" style="pointer-events: none;">
+    </div>
+    <div id="cell4">
+      <input type="radio" name="pair4" onclick="majorityGate();" style="pointer-events: none;">
+      <input type="radio" name="pair4" onclick="majorityGate();" style="pointer-events: none;">
+      <br/>
+      <input type="radio" name="pair5" onclick="majorityGate();" style="pointer-events: none;">
+      <input type="radio" name="pair5" onclick="majorityGate();" style="pointer-events: none;">
+    </div>
+    <div id="cell5">
+      <input type="radio" name="pair6" onclick="majorityGate();" style="pointer-events: none;">
+      <input type="radio" name="pair7" onclick="majorityGate();" style="pointer-events: none;">
+      <br/>
+      <input type="radio" name="pair6" onclick="majorityGate();" style="pointer-events: none;">
+      <input type="radio" name="pair7" onclick="majorityGate();" style="pointer-events: none;">
+    </div>
+    <br/>
+    <div id="cell6" style="visibility: hidden;">
+      <input type="radio">
+      <input type="radio">
+      <br/>
+      <input type="radio">
+      <input type="radio">
+    </div>
+    <div id="cell7">
+      <input type="radio" name="pair8" onclick="majorityGate();" style="pointer-events: none;">
+      <input type="radio" name="pair8" onclick="majorityGate();" style="pointer-events: none;">
+      <br/>
+      <input type="radio" name="pair9" onclick="majorityGate();">
+      <input type="radio" name="pair9" onclick="majorityGate();">
+    </div>
+    <div id="cell8" style="visibility: hidden;">
+      <input type="radio">
+      <input type="radio">
+      <br/>
+      <input type="radio">
+      <input type="radio">
+    </div>
+  </body>
+  <script>
+    function majorityGate() {
+      if(document.getElementsByName("pair0")[0].checked == true) {
+        document.getElementsByName("pair1")[1].checked = true;
+      } else if(document.getElementsByName("pair0")[1].checked == true) {
+        document.getElementsByName("pair1")[0].checked = true;
+      }
+      if(document.getElementsByName("pair2")[0].checked == true) {
+        document.getElementsByName("pair3")[1].checked = true;
+      } else if(document.getElementsByName("pair2")[1].checked == true) {
+        document.getElementsByName("pair3")[0].checked = true;
+      }
+      if(document.getElementsByName("pair9")[0].checked == true) {
+        document.getElementsByName("pair8")[1].checked = true;
+      } else if(document.getElementsByName("pair9")[1].checked == true) {
+        document.getElementsByName("pair8")[0].checked = true;
+      }
+
+      let A = document.getElementsByName("pair0")[0].checked ? 1 : 0;
+      let B = document.getElementsByName("pair2")[0].checked ? 1 : 0;
+      let C = document.getElementsByName("pair9")[0].checked ? 1 : 0;
+      
+      let F = (A & B) | (A & C) | (B & C); // Implementação da função booleana
+      
+      document.getElementsByName("pair4")[0].checked = F ? true : false;
+      document.getElementsByName("pair4")[1].checked = !F ? true : false;
+
+      document.getElementsByName("pair5")[0].checked = !F ? true : false;
+      document.getElementsByName("pair5")[1].checked = F ? true : false;
+
+      document.getElementsByName("pair6")[0].checked = !F ? true : false;
+      document.getElementsByName("pair6")[1].checked = F ? true : false;
+
+      document.getElementsByName("pair7")[0].checked = F ? true : false;
+      document.getElementsByName("pair7")[1].checked = !F ? true : false;
+    }
+  </script>
+</html>
+
