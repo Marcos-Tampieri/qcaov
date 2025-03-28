@@ -16,6 +16,11 @@
       input {
         accent-color: black;
       }
+      @media only screen and (max-width: 600px) {
+        div {
+          width: 60px;
+        }
+      }
     </style>
   </head>
   <body>
@@ -23,43 +28,31 @@
     <img src="majorityGate.jpg" alt="majorityGate.jpg">
     <img src="states.jpg" alt="states.jpg">
     <br>
-    <div id="cell0" style="visibility: hidden;">
-      <input type="radio">
-      <input type="radio">
-      <br/>
-      <input type="radio">
-      <input type="radio">
-    </div>
-    <div id="cell1">
+    <div style="visibility: hidden;"></div>
+    <div>
       <input type="radio" name="pair0" onclick="majorityGate();">
       <input type="radio" name="pair0" onclick="majorityGate();">
       <br/>
       <input type="radio" name="pair1" onclick="majorityGate();" style="pointer-events: none;">
       <input type="radio" name="pair1" onclick="majorityGate();" style="pointer-events: none;">
     </div>
-    <div id="cell2" style="visibility: hidden;">
-      <input type="radio">
-      <input type="radio">
-      <br/>
-      <input type="radio">
-      <input type="radio">
-    </div>
+    <div style="visibility: hidden;"></div>
     <br/>
-    <div id="cell3">
+    <div>
       <input type="radio" name="pair2" onclick="majorityGate();">
       <input type="radio" name="pair3" onclick="majorityGate();" style="pointer-events: none;">
       <br/>
       <input type="radio" name="pair2" onclick="majorityGate();">
       <input type="radio" name="pair3" onclick="majorityGate();" style="pointer-events: none;">
     </div>
-    <div id="cell4">
+    <div>
       <input type="radio" name="pair4" onclick="majorityGate();" style="pointer-events: none;">
       <input type="radio" name="pair4" onclick="majorityGate();" style="pointer-events: none;">
       <br/>
       <input type="radio" name="pair5" onclick="majorityGate();" style="pointer-events: none;">
       <input type="radio" name="pair5" onclick="majorityGate();" style="pointer-events: none;">
     </div>
-    <div id="cell5">
+    <div>
       <input type="radio" name="pair6" onclick="majorityGate();" style="pointer-events: none;">
       <input type="radio" name="pair7" onclick="majorityGate();" style="pointer-events: none;">
       <br/>
@@ -67,27 +60,15 @@
       <input type="radio" name="pair7" onclick="majorityGate();" style="pointer-events: none;">
     </div>
     <br/>
-    <div id="cell6" style="visibility: hidden;">
-      <input type="radio">
-      <input type="radio">
-      <br/>
-      <input type="radio">
-      <input type="radio">
-    </div>
-    <div id="cell7">
+    <div style="visibility: hidden;"></div>
+    <div>
       <input type="radio" name="pair8" onclick="majorityGate();" style="pointer-events: none;">
       <input type="radio" name="pair8" onclick="majorityGate();" style="pointer-events: none;">
       <br/>
       <input type="radio" name="pair9" onclick="majorityGate();">
       <input type="radio" name="pair9" onclick="majorityGate();">
     </div>
-    <div id="cell8" style="visibility: hidden;">
-      <input type="radio">
-      <input type="radio">
-      <br/>
-      <input type="radio">
-      <input type="radio">
-    </div>
+    <div style="visibility: hidden;"></div>
     <br>
     <p1 id="result">A->0; B->0; C->0; F->0;</p1>
   </body>
@@ -110,8 +91,8 @@
       }
 
       let A = document.getElementsByName("pair0")[0].checked ? 1 : 0;
-      let B = document.getElementsByName("pair2")[1].checked ? 1 : 0;
-      let C = document.getElementsByName("pair9")[0].checked ? 0 : 1;
+      let B = document.getElementsByName("pair2")[0].checked ? 1 : 0;
+      let C = document.getElementsByName("pair8")[0].checked ? 1 : 0;
 
       let F = (A & B) | (A & C) | (B & C); /* Majority gate with cells A, B and C */
 
@@ -123,11 +104,11 @@
       document.getElementsByName("pair5")[0].checked = !F ? true : false;
       document.getElementsByName("pair5")[1].checked = F ? true : false;
 
-      document.getElementsByName("pair6")[0].checked = !F ? true : false;
-      document.getElementsByName("pair6")[1].checked = F ? true : false;
+      document.getElementsByName("pair6")[0].checked = F ? true : false;
+      document.getElementsByName("pair6")[1].checked = !F ? true : false;
 
-      document.getElementsByName("pair7")[0].checked = F ? true : false;
-      document.getElementsByName("pair7")[1].checked = !F ? true : false;
+      document.getElementsByName("pair7")[0].checked = !F ? true : false;
+      document.getElementsByName("pair7")[1].checked = F ? true : false;
     }
   </script>
 </html>
