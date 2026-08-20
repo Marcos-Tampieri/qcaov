@@ -1,18 +1,45 @@
-document.getElementById('file-input').addEventListener('change', handleFileSelect);
+document.getElementById('submit-btn').addEventListener('click', runSimulation);
 
-function handleFileSelect(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+async function runSimulation() {
+    const inputContent = document.getElementById('qca-input').value;
+    const resultsContainer = document.getElementById('simulation-results');
+    const metaContainer = document.getElementById('metadata-panel');
+    const submitBtn = document.getElementById('submit-btn');
 
-    document.getElementById('file-name').textContent = file.name;
+    if (!inputContent.trim()) {
+        alert("Please enter QCA configuration data.");
+        return;
+    }
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const text = e.target.result;
+    // Update UI to show loading state
+    submitBtn.textContent = 'Running...';
+    submitBtn.disabled = true;
+    resultsContainer.innerHTML = '<div class="placeholder">Running simulation, please wait...</div>';
+    metaContainer.innerHTML = '';
+
+    try {
+        const response = await fetch('/simulate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: inputContent
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || response.statusText);
+        }
+
+        const text = await response.text();
         const parsedData = parseQCADesignerFile(text);
         renderSimulationResults(parsedData);
-    };
-    reader.readAsText(file);
+
+    } catch (error) {
+        console.error("Simulation failed:", error);
+        resultsContainer.innerHTML = `<div class="placeholder" style="color: #ef4444;">Error: ${error.message}</div>`;
+    } finally {
+        submitBtn.textContent = 'Run Simulation';
+        submitBtn.disabled = false;
+    }
 }
 
 function parseQCADesignerFile(text) {
@@ -73,7 +100,7 @@ function renderSimulationResults({ numberSamples, numberOfTraces, traces }) {
     resultsContainer.innerHTML = '';
 
     if (traces.length === 0) {
-        resultsContainer.innerHTML = '<div class="placeholder">No trace data found in file.</div>';
+        resultsContainer.innerHTML = '<div class="placeholder">No trace data found in output file.</div>';
         return;
     }
 
@@ -84,6 +111,7 @@ function renderSimulationResults({ numberSamples, numberOfTraces, traces }) {
         const label = document.createElement('div');
         label.className = 'trace-label';
         label.textContent = trace.label;
+        label.title = trace.label; // Tooltip for long labels
 
         const canvasWrapper = document.createElement('div');
         canvasWrapper.className = 'trace-canvas-wrapper';
@@ -115,7 +143,7 @@ function drawTraceCanvas(canvas, data) {
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
     ctx.lineWidth = 1;
 
-    // Draw center line (0.0 polarization line)
+    // Draw center line
     const midY = height / 2;
     ctx.beginPath();
     ctx.moveTo(0, midY);
@@ -124,7 +152,7 @@ function drawTraceCanvas(canvas, data) {
 
     if (!data || data.length === 0) return;
 
-    // Waveform plotting (-1.0 maps to bottom, +1.0 maps to top)
+    // Waveform plotting
     ctx.strokeStyle = '#22c55e';
     ctx.lineWidth = 2 * (window.devicePixelRatio || 1);
     ctx.beginPath();
@@ -134,7 +162,6 @@ function drawTraceCanvas(canvas, data) {
     for (let i = 0; i < data.length; i++) {
         const val = Math.max(-1, Math.min(1, data[i]));
         const x = i * stepX;
-        // Invert Y-axis because 0 is at top on canvas
         const y = midY - (val * (height / 2 - 8));
 
         if (i === 0) {

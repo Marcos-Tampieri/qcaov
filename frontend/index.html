@@ -6,22 +6,41 @@
     <link rel="icon" href="favicon.ico">
     <title>QCADesigner Simulation Results</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .input-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+            margin-top: 10px;
+        }
+        textarea {
+            width: 100%;
+            height: 120px;
+            background-color: #0f172a;
+            color: #f8fafc;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            padding: 12px;
+            font-family: monospace;
+            resize: vertical;
+        }
+    </style>
 </head>
 <body>
     <div class="app-container">
         <header>
-            <h1>QCADesigner Simulation Viewer</h1>
-            <div class="file-picker-container">
-                <label for="file-input" class="btn-primary">Select Simulation File</label>
-                <input type="file" id="file-input" accept=".txt,.log,*">
-                <span id="file-name" class="file-name">No file selected</span>
+            <h1>QCADesigner Web Interface</h1>
+            <div class="input-container">
+                <textarea id="qca-input" placeholder="Enter your QCA structure/code here..."></textarea>
+                <button id="submit-btn" class="btn-primary" style="align-self: flex-start;">Run Simulation</button>
             </div>
         </header>
 
         <section id="metadata-panel" class="metadata-panel"></section>
 
         <main id="simulation-results" class="simulation-results">
-            <div class="placeholder">Select a QCADesigner log file to visualize simulation traces.</div>
+            <div class="placeholder">Enter input and click run to visualize simulation traces.</div>
         </main>
     </div>
 
