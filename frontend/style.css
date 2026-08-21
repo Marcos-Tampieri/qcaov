@@ -1,12 +1,21 @@
 :root {
     --bg-color: #0f172a;
+    --panel-bg: #1e293b;
     --card-bg: #1e293b;
     --border-color: #334155;
+    --text-main: #f8fafc;
     --text-primary: #f8fafc;
+    --text-muted: #94a3b8;
     --text-secondary: #94a3b8;
+    --primary: #38bdf8;
     --accent-color: #38bdf8;
-    --trace-line-color: #22c55e;
-    --grid-color: rgba(255, 255, 255, 0.05);
+    --primary-hover: #7dd3fc;
+    --btn-bg: #334155;
+    --btn-hover: #475569;
+    --cell-normal: #22c55e;
+    --cell-input: #3b82f6;
+    --cell-output: #eab308;
+    --grid-line: rgba(255, 255, 255, 0.05);
 }
 
 * {
@@ -16,67 +25,115 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background-color: var(--bg-color);
-    color: var(--text-primary);
-    padding: 20px;
+    color: var(--text-main);
     display: flex;
     justify-content: center;
+    padding: 20px;
+    height: 100vh;
+    overflow-y: auto;
 }
 
 .app-container {
-    width: 100%;
-    max-width: 1200px;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    width: 100%;
+    max-width: 1400px;
+    gap: 15px;
+    height: 100%;
 }
 
 header {
-    background: var(--card-bg);
-    padding: 20px;
+    background: var(--panel-bg);
+    padding: 15px 20px;
     border-radius: 8px;
     border: 1px solid var(--border-color);
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 15px;
+    flex-shrink: 0;
 }
 
 h1 {
-    font-size: 1.25rem;
+    font-size: 1.4rem;
     font-weight: 600;
 }
 
-.file-picker-container {
+.toolbar {
     display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
     align-items: center;
-    gap: 12px;
+    justify-content: space-between;
+}
+
+.tool-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.btn {
+    background-color: var(--btn-bg);
+    color: var(--text-main);
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.2s;
+    font-weight: 500;
+}
+
+.btn:hover {
+    background-color: var(--btn-hover);
+}
+
+.btn.active {
+    background-color: var(--primary);
+    color: #000;
 }
 
 .btn-primary {
-    background-color: var(--accent-color);
-    color: #0284c7;
+    background-color: var(--primary);
+    color: #000;
     font-weight: 600;
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background 0.2s ease;
-    font-size: 0.9rem;
 }
-
 .btn-primary:hover {
-    background-color: #7dd3fc;
+    background-color: var(--primary-hover);
 }
 
-#file-input {
-    display: none;
+input[type="text"] {
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    padding: 8px;
+    border-radius: 4px;
+    width: 100px;
 }
 
-.file-name {
-    color: var(--text-secondary);
+.instructions {
     font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.canvas-container {
+    flex-shrink: 0;
+    height: 50vh; /* Keeps the canvas height manageable so traces fit below */
+    min-height: 350px;
+    background: #000;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    cursor: crosshair;
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
 }
 
 .metadata-panel {
@@ -84,6 +141,7 @@ h1 {
     gap: 20px;
     font-size: 0.9rem;
     color: var(--text-secondary);
+    flex-shrink: 0;
 }
 
 .metadata-panel span strong {
@@ -98,7 +156,8 @@ h1 {
     display: flex;
     flex-direction: column;
     gap: 15px;
-    min-height: 300px;
+    min-height: 200px;
+    flex-shrink: 0;
 }
 
 .placeholder {
@@ -132,10 +191,4 @@ h1 {
     flex-grow: 1;
     position: relative;
     height: 80px;
-}
-
-canvas {
-    width: 100%;
-    height: 100%;
-    display: block;
 }

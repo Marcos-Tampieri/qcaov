@@ -3,45 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="favicon.ico">
-    <title>QCADesigner Simulation Results</title>
+    <title>QCAdesigner Online Viewer</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        .input-container {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            width: 100%;
-            margin-top: 10px;
-        }
-        textarea {
-            width: 100%;
-            height: 120px;
-            background-color: #0f172a;
-            color: #f8fafc;
-            border: 1px solid #334155;
-            border-radius: 6px;
-            padding: 12px;
-            font-family: monospace;
-            resize: vertical;
-        }
-    </style>
 </head>
 <body>
     <div class="app-container">
         <header>
-            <h1>QCADesigner Web Interface</h1>
-            <div class="input-container">
-                <textarea id="qca-input" placeholder="Enter your QCA structure/code here..."></textarea>
-                <button id="submit-btn" class="btn-primary" style="align-self: flex-start;">Run Simulation</button>
+            <h1>QCAdesigner Online Viewer</h1>
+            <div class="toolbar">
+                <div class="tool-group">
+                    <button class="btn tool-btn active" data-tool="NORMAL">Normal Cell</button>
+                    <button class="btn tool-btn" data-tool="INPUT">Input Cell</button>
+                    <button class="btn tool-btn" data-tool="OUTPUT">Output Cell</button>
+                </div>
+                <div class="tool-group">
+                    <label for="cell-label">Label (I/O):</label>
+                    <input type="text" id="cell-label" placeholder="e.g., A, B" maxlength="5">
+                </div>
+                <div class="tool-group">
+                    <button class="btn btn-action" id="btn-clear">Clear Grid</button>
+                    <label for="file-import" class="btn btn-action">Import .qca</label>
+                    <input type="file" id="file-import" accept=".qca" style="display: none;">
+                    <button class="btn" id="btn-export">Export .qca</button>
+                    <button class="btn btn-primary" id="submit-btn">Run Simulation</button>
+                </div>
+            </div>
+            <div class="instructions">
+                <strong>Click</strong> on empty space to place. <strong>Click and drag</strong> to move. <strong>Middle-Click/Alt-Click</strong> to pan. <strong>Scroll</strong> to zoom. <strong>Press 'Delete'</strong> or <strong>'Backspace'</strong> to remove selected cell.
             </div>
         </header>
 
+        <main class="canvas-container">
+            <canvas id="qca-canvas"></canvas>
+        </main>
+
         <section id="metadata-panel" class="metadata-panel"></section>
 
-        <main id="simulation-results" class="simulation-results">
-            <div class="placeholder">Enter input and click run to visualize simulation traces.</div>
-        </main>
+        <section id="simulation-results" class="simulation-results">
+            <div class="placeholder">Place cells on the grid and click run to visualize simulation traces.</div>
+        </section>
     </div>
 
     <script src="script.js"></script>

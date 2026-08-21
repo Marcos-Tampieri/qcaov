@@ -2571,7 +2571,7 @@ drawtrace=TRUE
 [#TRACE_DATA]
 [#TRACE]
 [TRACE]
-data_labels=nA
+data_labels=S
 trace_function=3
 drawtrace=TRUE
 [TRACE_DATA]
