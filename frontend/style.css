@@ -15,6 +15,7 @@
     --cell-normal: #22c55e;
     --cell-input: #3b82f6;
     --cell-output: #eab308;
+    --cell-fixed: #f97316; /* Represents Orange (65535, 32768, 0) */
     --grid-line: rgba(255, 255, 255, 0.05);
 }
 
@@ -120,7 +121,7 @@ input[type="text"] {
 
 .canvas-container {
     flex-shrink: 0;
-    height: 50vh; /* Keeps the canvas height manageable so traces fit below */
+    height: 50vh; 
     min-height: 350px;
     background: #000;
     border: 1px solid var(--border-color);

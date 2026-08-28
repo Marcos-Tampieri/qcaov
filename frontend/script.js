@@ -10,13 +10,14 @@ const DOT_SIZE = 5;
 // State
 let cells = [];
 let currentTool = 'NORMAL'; 
-let selectedCell = null;
+let selectedCells = []; 
 
 // Interaction & Camera State
 let isDragging = false;
 let isPanning = false;
-let dragOffsetX = 0;
-let dragOffsetY = 0;
+let isSelecting = false;
+let selectionBox = { startX: 0, startY: 0, endX: 0, endY: 0 };
+let dragAnchor = { x: 0, y: 0 };
 let panX = 0;
 let panY = 0;
 let zoom = 1.0;
@@ -44,7 +45,7 @@ document.querySelectorAll('.tool-btn').forEach(btn => {
 document.getElementById('btn-clear').addEventListener('click', () => {
     if (confirm('Clear the entire grid?')) {
         cells = [];
-        selectedCell = null;
+        selectedCells = [];
         draw();
     }
 });
@@ -96,15 +97,26 @@ canvas.addEventListener('mousedown', (e) => {
     if (e.button !== 0) return;
 
     const { x, y } = getMousePos(e);
+    
+    // Shift click starts a multiple selection box
+    if (e.shiftKey) {
+        isSelecting = true;
+        selectionBox = { startX: x, startY: y, endX: x, endY: y };
+        return;
+    }
+
     const snappedX = snapToGrid(x);
     const snappedY = snapToGrid(y);
 
-    selectedCell = cells.find(c => Math.abs(c.x - snappedX) < GRID_SIZE / 2 && Math.abs(c.y - snappedY) < GRID_SIZE / 2);
+    const clickedCell = cells.find(c => Math.abs(c.x - snappedX) < GRID_SIZE / 2 && Math.abs(c.y - snappedY) < GRID_SIZE / 2);
 
-    if (selectedCell) {
+    if (clickedCell) {
+        if (!selectedCells.includes(clickedCell)) {
+            selectedCells = [clickedCell];
+        }
         isDragging = true;
-        dragOffsetX = selectedCell.x - x;
-        dragOffsetY = selectedCell.y - y;
+        dragAnchor = { x: snappedX, y: snappedY };
+        selectedCells.forEach(c => { c.startX = c.x; c.startY = c.y; });
     } else {
         const labelInput = document.getElementById('cell-label').value.trim();
         const newCell = {
@@ -114,7 +126,7 @@ canvas.addEventListener('mousedown', (e) => {
             label: (currentTool === 'INPUT' || currentTool === 'OUTPUT') ? labelInput : ''
         };
         cells.push(newCell);
-        selectedCell = newCell;
+        selectedCells = [newCell];
     }
     draw();
 });
@@ -129,26 +141,52 @@ canvas.addEventListener('mousemove', (e) => {
         return;
     }
 
-    if (isDragging && selectedCell) {
-        const { x, y } = getMousePos(e);
-        selectedCell.x = snapToGrid(x + dragOffsetX);
-        selectedCell.y = snapToGrid(y + dragOffsetY);
+    const { x, y } = getMousePos(e);
+
+    if (isSelecting) {
+        selectionBox.endX = x;
+        selectionBox.endY = y;
+        draw();
+        return;
+    }
+
+    if (isDragging && selectedCells.length > 0) {
+        const snappedX = snapToGrid(x);
+        const snappedY = snapToGrid(y);
+        const dx = snappedX - dragAnchor.x;
+        const dy = snappedY - dragAnchor.y;
+        
+        selectedCells.forEach(c => {
+            c.x = c.startX + dx;
+            c.y = c.startY + dy;
+        });
         draw();
     }
 });
 
-canvas.addEventListener('mouseup', () => {
+canvas.addEventListener('mouseup', (e) => {
+    if (isSelecting) {
+        const minX = Math.min(selectionBox.startX, selectionBox.endX);
+        const maxX = Math.max(selectionBox.startX, selectionBox.endX);
+        const minY = Math.min(selectionBox.startY, selectionBox.endY);
+        const maxY = Math.max(selectionBox.startY, selectionBox.endY);
+
+        selectedCells = cells.filter(c => c.x >= minX && c.x <= maxX && c.y >= minY && c.y <= maxY);
+    }
+
     isDragging = false;
     isPanning = false;
+    isSelecting = false;
     canvas.style.cursor = 'crosshair';
+    draw();
 });
 
 // Handle Delete Key
 window.addEventListener('keydown', (e) => {
-    if ((e.key === 'Delete' || e.key === 'Backspace') && selectedCell) {
+    if ((e.key === 'Delete' || e.key === 'Backspace') && selectedCells.length > 0) {
         if (document.activeElement.tagName !== 'INPUT') {
-            cells = cells.filter(c => c !== selectedCell);
-            selectedCell = null;
+            cells = cells.filter(c => !selectedCells.includes(c));
+            selectedCells = [];
             draw();
         }
     }
@@ -187,9 +225,10 @@ function draw() {
         let strokeColor, fillColor;
         if (cell.type === 'INPUT') { strokeColor = '#3b82f6'; fillColor = 'rgba(59, 130, 246, 0.2)'; }
         else if (cell.type === 'OUTPUT') { strokeColor = '#eab308'; fillColor = 'rgba(234, 179, 8, 0.2)'; }
+        else if (cell.type === 'FIXED0' || cell.type === 'FIXED1') { strokeColor = '#f97316'; fillColor = 'rgba(249, 115, 22, 0.2)'; }
         else { strokeColor = '#22c55e'; fillColor = 'rgba(34, 197, 94, 0.2)'; }
 
-        if (cell === selectedCell) {
+        if (selectedCells.includes(cell)) {
             ctx.strokeStyle = '#ffffff';
             ctx.lineWidth = 2 / zoom;
         } else {
@@ -206,18 +245,26 @@ function draw() {
         const dotRadius = DOT_SIZE / 2;
         
         const dotPositions = [
-            { x: cx - offset, y: cy - offset }, 
-            { x: cx + offset, y: cy + offset }, 
-            { x: cx + offset, y: cy - offset }, 
-            { x: cx - offset, y: cy + offset }  
+            { x: cx - offset, y: cy - offset, id: 'TL' }, 
+            { x: cx + offset, y: cy + offset, id: 'BR' }, 
+            { x: cx + offset, y: cy - offset, id: 'TR' }, 
+            { x: cx - offset, y: cy + offset, id: 'BL' }  
         ];
 
-        ctx.beginPath();
         dotPositions.forEach(pos => {
-            ctx.moveTo(pos.x + dotRadius, pos.y);
+            ctx.beginPath();
             ctx.arc(pos.x, pos.y, dotRadius, 0, Math.PI * 2);
+            
+            let isFilled = true;
+            if (cell.type === 'FIXED0' && (pos.id === 'TL' || pos.id === 'BR')) isFilled = false;
+            if (cell.type === 'FIXED1' && (pos.id === 'TR' || pos.id === 'BL')) isFilled = false;
+
+            if (isFilled) {
+                ctx.fill();
+            } else {
+                ctx.stroke(); // Draw hollow circle to represent absent electron
+            }
         });
-        ctx.fill();
 
         if (cell.label) {
             ctx.fillStyle = strokeColor;
@@ -226,6 +273,17 @@ function draw() {
             ctx.fillText(cell.label, cx, cy - CELL_SIZE/2 - (5 / zoom));
         }
     });
+
+    // Draw active multi-selection box
+    if (isSelecting) {
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.2)';
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1 / zoom;
+        const boxWidth = selectionBox.endX - selectionBox.startX;
+        const boxHeight = selectionBox.endY - selectionBox.startY;
+        ctx.fillRect(selectionBox.startX, selectionBox.startY, boxWidth, boxHeight);
+        ctx.strokeRect(selectionBox.startX, selectionBox.startY, boxWidth, boxHeight);
+    }
 
     ctx.restore();
 }
@@ -237,15 +295,35 @@ function draw() {
 function getColors(type) {
     if (type === 'INPUT') return { r: 0, g: 0, b: 65535 };
     if (type === 'OUTPUT') return { r: 65535, g: 65535, b: 0 };
+    if (type === 'FIXED0' || type === 'FIXED1') return { r: 65535, g: 32768, b: 0 };
     return { r: 0, g: 65535, b: 0 };
 }
 
-// Extracted the string building to its own function to be shared by Export and Simulation
 function generateQCADataString() {
     let qcaData = `[VERSION]\nqcadesigner_version=2.000000\n[#VERSION]\n[TYPE:DESIGN]\n[TYPE:QCADLayer]\ntype=3\nstatus=1\npszDescription=Drawing Layer\n[#TYPE:QCADLayer]\n[TYPE:QCADLayer]\ntype=0\nstatus=1\npszDescription=Substrate\n[TYPE:QCADSubstrate]\n[TYPE:QCADStretchyObject]\n[TYPE:QCADDesignObject]\nx=3000.000000\ny=1500.000000\nbSelected=FALSE\nclr.red=65535\nclr.green=65535\nclr.blue=65535\nbounding_box.xWorld=0.000000\nbounding_box.yWorld=0.000000\nbounding_box.cxWorld=6000.000000\nbounding_box.cyWorld=3000.000000\n[#TYPE:QCADDesignObject]\n[#TYPE:QCADStretchyObject]\ngrid_spacing=20.000000\n[#TYPE:QCADSubstrate]\n[#TYPE:QCADLayer]\n[TYPE:QCADLayer]\ntype=1\nstatus=0\npszDescription=Main Cell Layer\n`;
 
     cells.forEach(cell => {
         const c = getColors(cell.type);
+        const isFixed0 = cell.type === 'FIXED0';
+        const isFixed1 = cell.type === 'FIXED1';
+        const cellFunction = (isFixed0 || isFixed1) ? 'QCAD_CELL_FIXED' : `QCAD_CELL_${cell.type}`;
+
+        // Standard QCA variables
+        const q_e = '1.602176e-19';
+        const q_0 = '0.000000e+00';
+        
+        let c_TR = '8.010882e-20', c_BR = '8.010882e-20', c_BL = '8.010882e-20', c_TL = '8.010882e-20';
+        let s_TR = '-0.000000', s_BR = '13.653000', s_BL = '0.000000', s_TL = '0.000000';
+        
+        // Emulating precise parameters matching Fixed states
+        if (isFixed0) {
+            c_TR = q_e; c_BR = q_0; c_BL = q_e; c_TL = q_0;
+            s_TR = '-330449524386642983680197724733440.000000'; s_BR = '13.653000'; s_BL = '0.000000'; s_TL = '0.000000';
+        } else if (isFixed1) {
+            c_TR = q_0; c_BR = q_e; c_BL = q_0; c_TL = q_e;
+            s_TR = '-330449524386642983680197724733440.000000'; s_BR = '13.653000'; s_BL = '0.000000'; s_TL = '0.000000';
+        }
+
         qcaData += `[TYPE:QCADCell]
 [TYPE:QCADDesignObject]
 x=${cell.x.toFixed(6)}
@@ -266,38 +344,38 @@ cell_options.clock=0
 cell_options.relax=1
 cell_options.relax_in=1
 cell_options.mode=QCAD_CELL_MODE_NORMAL
-cell_function=QCAD_CELL_${cell.type}
+cell_function=${cellFunction}
 number_of_dots=4
 [TYPE:CELL_DOT]
 x=${(cell.x + 4.5).toFixed(6)}
 y=${(cell.y - 4.5).toFixed(6)}
 diameter=5.000000
-charge=8.010882e-20
-spin=-0.000000
+charge=${c_TR}
+spin=${s_TR}
 potential=0.000000
 [#TYPE:CELL_DOT]
 [TYPE:CELL_DOT]
 x=${(cell.x + 4.5).toFixed(6)}
 y=${(cell.y + 4.5).toFixed(6)}
 diameter=5.000000
-charge=8.010882e-20
-spin=13.653000
+charge=${c_BR}
+spin=${s_BR}
 potential=0.000000
 [#TYPE:CELL_DOT]
 [TYPE:CELL_DOT]
 x=${(cell.x - 4.5).toFixed(6)}
 y=${(cell.y + 4.5).toFixed(6)}
 diameter=5.000000
-charge=8.010882e-20
-spin=0.000000
+charge=${c_BL}
+spin=${s_BL}
 potential=0.000000
 [#TYPE:CELL_DOT]
 [TYPE:CELL_DOT]
 x=${(cell.x - 4.5).toFixed(6)}
 y=${(cell.y - 4.5).toFixed(6)}
 diameter=5.000000
-charge=8.010882e-20
-spin=0.000000
+charge=${c_TL}
+spin=${s_TL}
 potential=0.000000
 [#TYPE:CELL_DOT]
 `;
@@ -338,19 +416,31 @@ document.getElementById('file-import').addEventListener('change', (e) => {
             const block = blocks[i];
             const xMatch = block.match(/x=([0-9.]+)/);
             const yMatch = block.match(/y=([0-9.]+)/);
-            const funcMatch = block.match(/cell_function=QCAD_CELL_([A-Z]+)/);
+            const funcMatch = block.match(/cell_function=QCAD_CELL_([A-Z_]+)/);
             const labelMatch = block.match(/psz=(.*)/);
 
             if (xMatch && yMatch && funcMatch) {
+                let type = funcMatch[1];
+                
+                // Inspect dot charges sequentially (TR is [0]) to derive logic state[cite: 10]
+                if (type === 'FIXED') {
+                    const charges = [...block.matchAll(/charge=([0-9.e+-]+)/g)].map(m => parseFloat(m[1]));
+                    if (charges.length >= 4 && charges[0] > 0) {
+                        type = 'FIXED0';
+                    } else {
+                        type = 'FIXED1';
+                    }
+                }
+
                 cells.push({
                     x: parseFloat(xMatch[1]),
                     y: parseFloat(yMatch[1]),
-                    type: funcMatch[1],
+                    type: type,
                     label: labelMatch ? labelMatch[1].trim() : ''
                 });
             }
         }
-        selectedCell = null;
+        selectedCells = [];
         draw();
     };
     reader.readAsText(file);
@@ -374,7 +464,6 @@ async function runSimulation() {
     const metaContainer = document.getElementById('metadata-panel');
     const submitBtn = document.getElementById('submit-btn');
 
-    // Update UI to show loading state
     submitBtn.textContent = 'Running...';
     submitBtn.disabled = true;
     resultsContainer.innerHTML = '<div class="placeholder">Running simulation, please wait...</div>';
