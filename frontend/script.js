@@ -422,7 +422,7 @@ document.getElementById('file-import').addEventListener('change', (e) => {
             if (xMatch && yMatch && funcMatch) {
                 let type = funcMatch[1];
                 
-                // Inspect dot charges sequentially (TR is [0]) to derive logic state[cite: 10]
+                // Inspect dot charges sequentially (TR is [0]) to derive logic state
                 if (type === 'FIXED') {
                     const charges = [...block.matchAll(/charge=([0-9.e+-]+)/g)].map(m => parseFloat(m[1]));
                     if (charges.length >= 4 && charges[0] > 0) {
@@ -602,6 +602,22 @@ function drawTraceCanvas(canvas, data) {
 
     if (!data || data.length === 0) return;
 
+    // Dynamically calculate min and max to auto-scale traces
+    let minVal = Infinity;
+    let maxVal = -Infinity;
+    for (let i = 0; i < data.length; i++) {
+        if (data[i] < minVal) minVal = data[i];
+        if (data[i] > maxVal) maxVal = data[i];
+    }
+
+    // Provide a fallback range if the trace is completely flat
+    if (maxVal === minVal) {
+        maxVal = minVal + 1;
+        minVal = minVal - 1;
+    }
+
+    const range = maxVal - minVal;
+
     ctx.strokeStyle = '#22c55e';
     ctx.lineWidth = 2 * (window.devicePixelRatio || 1);
     ctx.beginPath();
@@ -609,9 +625,12 @@ function drawTraceCanvas(canvas, data) {
     const stepX = width / (data.length - 1);
 
     for (let i = 0; i < data.length; i++) {
-        const val = Math.max(-1, Math.min(1, data[i]));
+        // Normalize the current data point between 0.0 and 1.0 based on its bounds
+        const normalized = (data[i] - minVal) / range;
+        
         const x = i * stepX;
-        const y = midY - (val * (height / 2 - 8));
+        // Map normalized value to the canvas height, leaving an 8px vertical margin
+        const y = (height - 8) - (normalized * (height - 16));
 
         if (i === 0) {
             ctx.moveTo(x, y);

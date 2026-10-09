@@ -1,17 +1,13 @@
-#!/bin/bash
+#!/usr/bin/env python3
 
-read -r -p "Enter the QCADesigner folder path relative to this script: " QCA_DIR
-
-if [ ! -d "$QCA_DIR" ]; then
-    echo "Error: Directory '$QCA_DIR' does not exist."
-    exit 1
-fi
-
-python3 - "$QCA_DIR" << 'EOF'
 import sys
 import os
 
-qca_dir = sys.argv[1]
+qca_dir = input("Enter the QCADesigner folder path relative to this script: ")
+
+if not os.path.isdir(qca_dir):
+    print(f"Error: Directory '{qca_dir}' does not exist.")
+    sys.exit(1)
 
 def update_file(relative_path, old_block, new_block):
     target_path = os.path.join(qca_dir, relative_path)
@@ -114,5 +110,3 @@ callback_c_new = """void on_save_output_to_file_menu_item_activate(GtkMenuItem *
   }"""
 
 update_file("src/callback.c", callback_c_old, callback_c_new)
-
-EOF
