@@ -15,7 +15,7 @@
     --cell-normal: #22c55e;
     --cell-input: #3b82f6;
     --cell-output: #eab308;
-    --cell-fixed: #f97316; /* Represents Orange (65535, 32768, 0) */
+    --cell-fixed: #f97316;
     --grid-line: rgba(255, 255, 255, 0.05);
 }
 
@@ -178,14 +178,31 @@ canvas {
 }
 
 .trace-label {
-    width: 100px;
-    font-weight: 600;
-    font-size: 0.9rem;
+    width: 130px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    font-family: monospace;
     text-align: right;
-    color: var(--accent-color);
+    padding: 2px 0;
+    flex-shrink: 0;
+    height: 100%;
+}
+
+.label-top {
+    color: var(--text-secondary);
+}
+
+.label-mid {
+    font-weight: 600;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.label-bot {
+    color: var(--text-secondary);
 }
 
 .trace-canvas-wrapper {

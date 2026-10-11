@@ -98,7 +98,6 @@ canvas.addEventListener('mousedown', (e) => {
 
     const { x, y } = getMousePos(e);
     
-    // Shift click starts a multiple selection box
     if (e.shiftKey) {
         isSelecting = true;
         selectionBox = { startX: x, startY: y, endX: x, endY: y };
@@ -181,7 +180,6 @@ canvas.addEventListener('mouseup', (e) => {
     draw();
 });
 
-// Handle Delete Key
 window.addEventListener('keydown', (e) => {
     if ((e.key === 'Delete' || e.key === 'Backspace') && selectedCells.length > 0) {
         if (document.activeElement.tagName !== 'INPUT') {
@@ -192,7 +190,7 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
-// Rendering Logic
+// Rendering Logic for Placer Canvas
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
@@ -262,7 +260,7 @@ function draw() {
             if (isFilled) {
                 ctx.fill();
             } else {
-                ctx.stroke(); // Draw hollow circle to represent absent electron
+                ctx.stroke();
             }
         });
 
@@ -274,7 +272,6 @@ function draw() {
         }
     });
 
-    // Draw active multi-selection box
     if (isSelecting) {
         ctx.fillStyle = 'rgba(56, 189, 248, 0.2)';
         ctx.strokeStyle = '#38bdf8';
@@ -308,14 +305,12 @@ function generateQCADataString() {
         const isFixed1 = cell.type === 'FIXED1';
         const cellFunction = (isFixed0 || isFixed1) ? 'QCAD_CELL_FIXED' : `QCAD_CELL_${cell.type}`;
 
-        // Standard QCA variables
         const q_e = '1.602176e-19';
         const q_0 = '0.000000e+00';
         
         let c_TR = '8.010882e-20', c_BR = '8.010882e-20', c_BL = '8.010882e-20', c_TL = '8.010882e-20';
         let s_TR = '-0.000000', s_BR = '13.653000', s_BL = '0.000000', s_TL = '0.000000';
         
-        // Emulating precise parameters matching Fixed states
         if (isFixed0) {
             c_TR = q_e; c_BR = q_0; c_BL = q_e; c_TL = q_0;
             s_TR = '-330449524386642983680197724733440.000000'; s_BR = '13.653000'; s_BL = '0.000000'; s_TL = '0.000000';
@@ -422,7 +417,6 @@ document.getElementById('file-import').addEventListener('change', (e) => {
             if (xMatch && yMatch && funcMatch) {
                 let type = funcMatch[1];
                 
-                // Inspect dot charges sequentially (TR is [0]) to derive logic state
                 if (type === 'FIXED') {
                     const charges = [...block.matchAll(/charge=([0-9.e+-]+)/g)].map(m => parseFloat(m[1]));
                     if (charges.length >= 4 && charges[0] > 0) {
@@ -448,7 +442,7 @@ document.getElementById('file-import').addEventListener('change', (e) => {
 });
 
 // ==========================================
-// SIMULATION RUNNER LOGIC
+// SIMULATION RUNNER & TRACE RENDER LOGIC
 // ==========================================
 
 document.getElementById('submit-btn').addEventListener('click', runSimulation);
@@ -556,14 +550,58 @@ function renderSimulationResults({ numberSamples, numberOfTraces, traces }) {
         return;
     }
 
-    traces.forEach(trace => {
+    // Determine trace bounds categories based on QCADesigner specifications
+    const traceRenderInfo = traces.map(trace => {
+        const isClock = trace.label.toUpperCase().includes('CLOCK');
+        // Check if trace matches an output cell label
+        const isOutput = cells.some(c => c.type === 'OUTPUT' && c.label === trace.label);
+
+        let minVal, maxVal, minStr, maxStr;
+        if (isClock) {
+            minVal = 3.80e-23;
+            maxVal = 9.80e-22;
+            minStr = '3,80e-23';
+            maxStr = '9,80e-22';
+        } else if (isOutput) {
+            minVal = -5.62e-01;
+            maxVal = 5.62e-01;
+            minStr = '-5,62e-01';
+            maxStr = '5,62e-01';
+        } else {
+            minVal = -1.00e+00;
+            maxVal = 1.00e+00;
+            minStr = '-1,00e+00';
+            maxStr = '1,00e+00';
+        }
+
+        return { trace, minVal, maxVal, minStr, maxStr };
+    });
+
+    const activeRows = [];
+
+    traceRenderInfo.forEach(({ trace, minVal, maxVal, minStr, maxStr }) => {
         const row = document.createElement('div');
         row.className = 'trace-row';
 
-        const label = document.createElement('div');
-        label.className = 'trace-label';
-        label.textContent = trace.label;
-        label.title = trace.label;
+        const labelDiv = document.createElement('div');
+        labelDiv.className = 'trace-label';
+
+        const topSpan = document.createElement('span');
+        topSpan.className = 'label-top';
+        topSpan.textContent = `max: ${maxStr}`;
+
+        const midSpan = document.createElement('span');
+        midSpan.className = 'label-mid';
+        midSpan.textContent = trace.label;
+        midSpan.title = trace.label;
+
+        const botSpan = document.createElement('span');
+        botSpan.className = 'label-bot';
+        botSpan.textContent = `min: ${minStr}`;
+
+        labelDiv.appendChild(topSpan);
+        labelDiv.appendChild(midSpan);
+        labelDiv.appendChild(botSpan);
 
         const canvasWrapper = document.createElement('div');
         canvasWrapper.className = 'trace-canvas-wrapper';
@@ -571,15 +609,60 @@ function renderSimulationResults({ numberSamples, numberOfTraces, traces }) {
         const canvas = document.createElement('canvas');
         canvasWrapper.appendChild(canvas);
 
-        row.appendChild(label);
+        row.appendChild(labelDiv);
         row.appendChild(canvasWrapper);
         resultsContainer.appendChild(row);
 
-        drawTraceCanvas(canvas, trace.data);
+        activeRows.push({ canvas, data: trace.data, minVal, maxVal, topSpan, botSpan, maxStr, minStr });
+    });
+
+    // Draw all traces initially
+    activeRows.forEach(item => drawTraceCanvas(item.canvas, item.data, item.minVal, item.maxVal, null));
+
+    // Synchronized Hover across all trace rows
+    resultsContainer.addEventListener('mousemove', (e) => {
+        const firstWrapper = activeRows[0].canvas.parentElement;
+        const rect = firstWrapper.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        
+        if (mouseX < 0 || mouseX > firstWrapper.clientWidth) {
+            // Mouse outside active plot area
+            activeRows.forEach(item => {
+                drawTraceCanvas(item.canvas, item.data, item.minVal, item.maxVal, null);
+                item.topSpan.textContent = `max: ${item.maxStr}`;
+                item.topSpan.style.color = '';
+                item.botSpan.textContent = `min: ${item.minStr}`;
+            });
+            return;
+        }
+
+        const ratio = Math.max(0, Math.min(1, mouseX / firstWrapper.clientWidth));
+        
+        activeRows.forEach(item => {
+            const sampleIndex = Math.round(ratio * (item.data.length - 1));
+            const currentVal = item.data[sampleIndex];
+            
+            // Draw canvas with hover red line
+            drawTraceCanvas(item.canvas, item.data, item.minVal, item.maxVal, ratio);
+
+            // Update label: upper line shows exact value in red, lower line is empty
+            item.topSpan.textContent = `current value: ${currentVal.toExponential(2).replace('e', 'e+')}`;
+            item.topSpan.style.color = '#ef4444';
+            item.botSpan.textContent = '';
+        });
+    });
+
+    resultsContainer.addEventListener('mouseleave', () => {
+        activeRows.forEach(item => {
+            drawTraceCanvas(item.canvas, item.data, item.minVal, item.maxVal, null);
+            item.topSpan.textContent = `max: ${item.maxStr}`;
+            item.topSpan.style.color = '';
+            item.botSpan.textContent = `min: ${item.minStr}`;
+        });
     });
 }
 
-function drawTraceCanvas(canvas, data) {
+function drawTraceCanvas(canvas, data, minVal, maxVal, hoverRatio) {
     const rect = canvas.parentElement.getBoundingClientRect();
     canvas.width = rect.width * window.devicePixelRatio || 1;
     canvas.height = rect.height * window.devicePixelRatio || 1;
@@ -602,20 +685,6 @@ function drawTraceCanvas(canvas, data) {
 
     if (!data || data.length === 0) return;
 
-    // Dynamically calculate min and max to auto-scale traces
-    let minVal = Infinity;
-    let maxVal = -Infinity;
-    for (let i = 0; i < data.length; i++) {
-        if (data[i] < minVal) minVal = data[i];
-        if (data[i] > maxVal) maxVal = data[i];
-    }
-
-    // Provide a fallback range if the trace is completely flat
-    if (maxVal === minVal) {
-        maxVal = minVal + 1;
-        minVal = minVal - 1;
-    }
-
     const range = maxVal - minVal;
 
     ctx.strokeStyle = '#22c55e';
@@ -625,11 +694,8 @@ function drawTraceCanvas(canvas, data) {
     const stepX = width / (data.length - 1);
 
     for (let i = 0; i < data.length; i++) {
-        // Normalize the current data point between 0.0 and 1.0 based on its bounds
-        const normalized = (data[i] - minVal) / range;
-        
+        const normalized = (data[i] - minVal) / (range === 0 ? 1 : range);
         const x = i * stepX;
-        // Map normalized value to the canvas height, leaving an 8px vertical margin
         const y = (height - 8) - (normalized * (height - 16));
 
         if (i === 0) {
@@ -639,4 +705,15 @@ function drawTraceCanvas(canvas, data) {
         }
     }
     ctx.stroke();
+
+    // Draw vertical red line on hover
+    if (hoverRatio !== null && hoverRatio !== undefined) {
+        const hoverX = hoverRatio * width;
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 2 * (window.devicePixelRatio || 1);
+        ctx.beginPath();
+        ctx.moveTo(hoverX, 0);
+        ctx.lineTo(hoverX, height);
+        ctx.stroke();
+    }
 }
